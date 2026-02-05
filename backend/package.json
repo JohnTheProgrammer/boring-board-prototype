@@ -1,0 +1,29 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "migrate": "DATABASE_URL=postgresql://postgres:password@localhost:5432/boringboard node-pg-migrate"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@trpc/server": "^11.6.0",
+    "cors": "^2.8.5",
+    "jsonwebtoken": "^9.0.2",
+    "minio": "^8.0.5",
+    "pg": "^8.16.3",
+    "zod": "^4.0.17"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.2.1",
+    "@types/pg": "^8.15.5",
+    "node-pg-migrate": "^8.0.3",
+    "tsx": "^4.20.3"
+  },
+  "type": "module"
+}
