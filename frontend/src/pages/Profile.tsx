@@ -18,6 +18,7 @@ import { formatDateString } from "../util/formatDateString";
 import { PostCard } from "../components/PostCard";
 import { CommentCard } from "../components/CommentCard";
 import { ReplyCard } from "../components/ReplyCard";
+import { useSyncPostsCache } from "./Posts";
 
 const ProfileVotes = () => {
   return (
@@ -54,11 +55,13 @@ const ProfilePosts = ({ username }: { username: string }) => {
   const query = useQuery(
     trpc.posts.getManyByUsername.queryOptions({ username }),
   );
+  useSyncPostsCache(query);
+
   return (
     <Stack gap={1}>
       {query.isSuccess &&
         query.data.posts.map((post) => (
-          <PostCard key={`post-${post.id}`} post={post} />
+          <PostCard key={`post-${post.id}`} postId={post.id} />
         ))}
     </Stack>
   );

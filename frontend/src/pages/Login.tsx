@@ -5,9 +5,9 @@ import Button from "@mui/material/Button";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { queryClient, trpc } from "../util/api";
+import { trpc } from "../util/api";
 import { Link, useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Stack } from "@mui/material";
 
 const FormSchema = z.object({
@@ -18,6 +18,7 @@ const FormSchema = z.object({
 type FormSchema = z.infer<typeof FormSchema>;
 
 export const Login = () => {
+  const queryClient = useQueryClient();
   const [_, navigate] = useLocation();
   const loginMutation = useMutation(
     trpc.user.login.mutationOptions({

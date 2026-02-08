@@ -12,8 +12,8 @@ import { Settings } from "./pages/Settings";
 import { SignUp } from "./pages/Signup";
 import { Tag } from "./pages/Tag";
 import { Tags } from "./pages/Tags";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, trpc } from "./util/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { trpc } from "./util/api";
 import { ResponsiveNavigation } from "./components/ResponsiveNavigation";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 
@@ -27,6 +27,7 @@ const theme = createTheme({ cssVariables: true });
 const drawerWidth = 240;
 
 function App() {
+  const queryClient = useQueryClient();
   const query = useQuery(
     trpc.user.isAuthenticated.queryOptions(undefined, { retry: false }),
   );

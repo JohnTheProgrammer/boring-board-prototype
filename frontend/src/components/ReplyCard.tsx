@@ -27,7 +27,20 @@ export const ReplyCard = ({ reply }: { reply: any }) => {
   const deleteReplyMutation = useMutation(
     trpc.comments.deleteById.mutationOptions({
       onSuccess: () => {
-        // TODO update the posts getById and getMany caches. Especially the getById cache
+        queryClient.setQueryData(
+          trpc.posts.getById.queryKey({ postId: reply.post_id }),
+          (post) => {
+            if (!post) {
+              return post;
+            }
+
+            return {
+              ...post,
+              replies_amount: post.replies_amount - 1,
+            };
+          },
+        );
+
         queryClient.setQueryData(
           trpc.comments.getCommentsByPostId.queryKey({ postId: reply.post_id }),
           (comments) => {

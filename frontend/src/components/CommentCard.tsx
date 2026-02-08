@@ -117,10 +117,6 @@ export const CommentCard = ({
         vote,
       }),
     onMutate: async ({ commentId, vote, prevUserVote }) => {
-      await queryClient.cancelQueries({
-        queryKey: trpc.posts.getById.queryKey(),
-      });
-
       const { modifier, newVote } = getVoteChange(prevUserVote, vote);
 
       const getByIdQueryData = queryClient.getQueryData(
@@ -165,7 +161,20 @@ export const CommentCard = ({
   const deleteCommentMutation = useMutation(
     trpc.comments.deleteById.mutationOptions({
       onSuccess: (_, { commentId }) => {
-        // TODO update the post getMany and getById caches to lower the comment amount. ESPECIALLY the getById Cache
+        queryClient.setQueryData(
+          trpc.posts.getById.queryKey({ postId: comment.post_id }),
+          (post) => {
+            if (!post) {
+              return post;
+            }
+
+            return {
+              ...post,
+              comment: post.comment_amount - 1,
+            };
+          },
+        );
+
         queryClient.setQueryData(
           trpc.comments.getCommentsByPostId.queryKey({
             postId: comment.post_id,
@@ -189,22 +198,7 @@ export const CommentCard = ({
   );
 
   const createReplyMutation = useMutation(
-    trpc.comments.createReply.mutationOptions(),
-  );
-
-  const isVotingEnabled = !!isAuthenticated && !voteMutation.isPending;
-
-  const onSubmit = (formValues: CreateCommentSchema, reset: () => void) => {
-    const formData = new FormData();
-    formData.set("body", formValues.body);
-    formData.set("comment_id", comment.id.toString());
-    formData.set("post_id", comment.post_id.toString());
-
-    if (formValues.fileList.length > 0) {
-      formData.set("file", formValues.fileList.item(0) as File);
-    }
-
-    createReplyMutation.mutate(formData, {
+    trpc.comments.createReply.mutationOptions({
       onSuccess: (reply) => {
         queryClient.setQueryData(
           trpc.comments.getCommentsByPostId.queryKey({
@@ -255,25 +249,24 @@ export const CommentCard = ({
             };
           },
         );
-
-        queryClient.setQueriesData(
-          { queryKey: trpc.posts.getMany.pathKey() },
-          (posts: RouterOutput["posts"]["getMany"]) => {
-            if (!posts) {
-              return posts;
-            }
-            return {
-              posts: posts.posts.map((post) =>
-                post.id === comment.post_id
-                  ? { ...post, replies_amount: post.replies_amount + 1 }
-                  : post,
-              ),
-            };
-          },
-        );
-
-        reset();
       },
+    }),
+  );
+
+  const isVotingEnabled = !!isAuthenticated && !voteMutation.isPending;
+
+  const onSubmit = (formValues: CreateCommentSchema, reset: () => void) => {
+    const formData = new FormData();
+    formData.set("body", formValues.body);
+    formData.set("comment_id", comment.id.toString());
+    formData.set("post_id", comment.post_id.toString());
+
+    if (formValues.fileList.length > 0) {
+      formData.set("file", formValues.fileList.item(0) as File);
+    }
+
+    createReplyMutation.mutate(formData, {
+      onSuccess: () => reset(),
     });
   };
 

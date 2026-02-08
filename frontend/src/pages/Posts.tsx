@@ -1,7 +1,12 @@
+import React from "react";
 import Stack from "@mui/material/Stack";
 import { PostCard } from "../components/PostCard";
-import { useQuery } from "@tanstack/react-query";
-import { trpc } from "../util/api";
+import {
+  useQuery,
+  useQueryClient,
+  type UseQueryResult,
+} from "@tanstack/react-query";
+import { trpc, type RouterOutput } from "../util/api";
 import CircularProgress from "@mui/material/CircularProgress";
 import {
   Button,
@@ -16,6 +21,8 @@ import { Search } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { useSearchParams } from "wouter";
+import type { TRPCClientErrorLike } from "@trpc/client";
+import type { AppRouter } from "../../../backend/src";
 
 const createdAtValues = ["Anytime", "Hour", "Today", "Week", "Month", "Year"];
 const orderByValues = ["Newest", "Top Voted", "Controversial", "Worst Voted"];
@@ -28,6 +35,26 @@ const getManyForm = z.object({
 
 type GetManyForm = z.infer<typeof getManyForm>;
 
+// TODO investigate if there's a better way to have a "global context" for posts
+export const useSyncPostsCache = (
+  query: UseQueryResult<
+    RouterOutput["posts"]["getMany"],
+    TRPCClientErrorLike<AppRouter>
+  >,
+) => {
+  const queryClient = useQueryClient();
+  React.useEffect(() => {
+    if (query.isSuccess) {
+      query.data.posts.forEach((post) => {
+        queryClient.setQueryData(
+          trpc.posts.getById.queryKey({ postId: post.id }),
+          post,
+        );
+      });
+    }
+  }, [query]);
+};
+
 export const Posts = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { register, handleSubmit } = useForm<GetManyForm>();
@@ -38,6 +65,8 @@ export const Posts = () => {
       orderBy: searchParams.get("orderBy"),
     }),
   );
+
+  useSyncPostsCache(query);
 
   const onSubmit = handleSubmit(async (formValues) => {
     setSearchParams(formValues);
@@ -112,7 +141,7 @@ export const Posts = () => {
       ) : (
         <>
           {query.data.posts.map((post) => (
-            <PostCard key={`post-${post.id}`} post={post} />
+            <PostCard key={`post-${post.id}`} postId={post.id} />
           ))}
           <Box display="flex" justifyContent="center">
             <Button variant="outlined">Load More</Button>
