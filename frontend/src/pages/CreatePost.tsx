@@ -5,12 +5,12 @@ import { trpc } from "../util/api";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 
 const tagShape = z.string().toLowerCase().trim().max(180).min(1);
 
-// TODO Gotta add title and body length limits. also gotta add these limits in the database
+// TODO Gotta add title and body length to the database
 const createPostForm = z.object({
   title: z.string().trim().min(1).max(300),
   body: z.string().trim().max(40000),
@@ -35,6 +35,7 @@ const createPostForm = z.object({
 type CreatePostForm = z.infer<typeof createPostForm>;
 
 export const CreatePost = () => {
+  const queryClient = useQueryClient();
   const [_, navigate] = useLocation();
   const {
     register,
@@ -55,7 +56,7 @@ export const CreatePost = () => {
   const createPostMutation = useMutation(
     trpc.posts.create.mutationOptions({
       onSuccess: (data) => {
-        // TODO there is a create post flash when navigating to posts page. update the getMany query cache here
+        queryClient.invalidateQueries({ queryKey: trpc.posts.pathKey() });
         navigate(`/post/${data.postId}`);
       },
     }),

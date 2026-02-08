@@ -25,8 +25,8 @@ import {
   DialogTitle,
   Divider,
 } from "@mui/material";
-import { useMutation } from "@tanstack/react-query";
-import { trpcClient, queryClient, trpc, type RouterOutput } from "../util/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { trpcClient, trpc } from "../util/api";
 import { useLocation } from "wouter";
 import { AuthenticatedContext } from "../App";
 import { getVoteChange } from "../util/getVoteChange";
@@ -47,19 +47,27 @@ const mediaStyle = {
 };
 
 export const PostCard = ({
-  post,
+  postId,
   preview = true,
 }: {
-  post:
-    | RouterOutput["posts"]["getMany"]["posts"][0]
-    | RouterOutput["posts"]["getById"];
+  postId: number;
   preview?: boolean;
 }) => {
+  const queryClient = useQueryClient();
   const isAuthenticated = React.useContext(AuthenticatedContext);
   const [location, navigate] = useLocation();
   const [openPostPopover, setOpenPostPopover] = React.useState(false);
   const postPopoverButtonRef = React.useRef(null);
   const [deleteDialogVisible, setDeleteDialogVisible] = React.useState(false);
+
+  const { data: post } = useQuery(
+    trpc.posts.getById.queryOptions(
+      { postId },
+      {
+        enabled: false,
+      },
+    ),
+  );
 
   const voteMutation = useMutation({
     mutationFn: ({
@@ -75,42 +83,10 @@ export const PostCard = ({
         vote,
       }),
     onMutate: async ({ postId, vote, prevUserVote }) => {
-      await Promise.all([
-        queryClient.cancelQueries({
-          queryKey: trpc.posts.getMany.pathKey(),
-        }),
-        queryClient.cancelQueries({ queryKey: trpc.posts.getById.queryKey() }),
-      ]);
-
-      // todo update this to getQueries and update the change the corresponding rollback to setQueries for onError
-      const getManyQueryData = queryClient.getQueryData(
-        trpc.posts.getMany.queryKey(),
-      );
+      const { modifier, newVote } = getVoteChange(prevUserVote, vote);
 
       const getByIdQueryData = queryClient.getQueryData(
         trpc.posts.getById.queryKey({ postId }),
-      );
-
-      const { modifier, newVote } = getVoteChange(prevUserVote, vote);
-
-      queryClient.setQueriesData(
-        { queryKey: trpc.posts.getMany.pathKey() },
-        (posts: RouterOutput["posts"]["getMany"]) => {
-          const updatedPost = {
-            ...post,
-            votes: post.votes + modifier,
-            user_vote: newVote,
-          };
-
-          if (!posts) {
-            return posts;
-          }
-          return {
-            posts: posts.posts.map((post) =>
-              post.id === postId ? updatedPost : post,
-            ),
-          };
-        },
       );
 
       queryClient.setQueryData(
@@ -126,16 +102,9 @@ export const PostCard = ({
           };
         },
       );
-
-      return { getManyQueryData, getByIdQueryData };
+      return { getByIdQueryData };
     },
     onError: (_err, variables, context) => {
-      if (context && context.getManyQueryData) {
-        queryClient.setQueryData(
-          trpc.posts.getMany.queryKey(),
-          context.getManyQueryData,
-        );
-      }
       if (context && context.getByIdQueryData) {
         queryClient.setQueryData(
           trpc.posts.getById.queryKey({ postId: variables.postId }),
@@ -148,21 +117,7 @@ export const PostCard = ({
   const deletePostMutation = useMutation(
     trpc.posts.deleteById.mutationOptions({
       onSuccess: (_, { postId }) => {
-        queryClient.setQueriesData(
-          { queryKey: trpc.posts.getMany.pathKey() },
-          (posts: RouterOutput["posts"]["getMany"]) => {
-            if (!posts) {
-              return posts;
-            }
-            return {
-              posts: posts.posts.filter((post) => post.id !== postId),
-            };
-          },
-        );
-
-        queryClient.removeQueries({
-          queryKey: trpc.posts.getById.queryKey({ postId }),
-        });
+        queryClient.invalidateQueries({ queryKey: trpc.posts.pathKey() });
 
         setDeleteDialogVisible(false);
 
@@ -172,7 +127,20 @@ export const PostCard = ({
       },
     }),
   );
+
   const isVotingEnabled = !!isAuthenticated && !voteMutation.isPending;
+
+  if (!post) {
+    return (
+      <Card>
+        <CardContent>
+          <Typography>
+            Post data not found in posts.getById query cache
+          </Typography>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const content = (
     <CardContent>

@@ -3,7 +3,7 @@ import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import { CircularProgress, MenuItem, Select } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { trpc, type RouterOutput } from "../util/api";
+import { trpc } from "../util/api";
 import { PostCard } from "../components/PostCard";
 import type { StringRouteParams } from "wouter";
 import { CommentCard } from "../components/CommentCard";
@@ -44,25 +44,6 @@ export const Post = ({
     }
     createCommentMutation.mutate(formData, {
       onSuccess: (comment) => {
-        queryClient.setQueriesData(
-          { queryKey: trpc.posts.getMany.pathKey() },
-          (posts: RouterOutput["posts"]["getMany"]) => {
-            if (!posts) {
-              return posts;
-            }
-            return {
-              posts: posts.posts.map((post) =>
-                post.id === Number(params.id)
-                  ? {
-                      ...post,
-                      comment_amount: post.comment_amount + 1,
-                    }
-                  : post,
-              ),
-            };
-          },
-        );
-
         queryClient.setQueryData(
           trpc.posts.getById.queryKey({ postId: Number(params.id) }),
           (post) => {
@@ -104,7 +85,7 @@ export const Post = ({
         </Box>
       ) : (
         <>
-          <PostCard post={postQuery.data} preview={false} />
+          <PostCard postId={postQuery.data.id} preview={false} />
           <Box display="flex" justifyContent="space-between">
             <Typography variant="h6">Comments</Typography>
             <Select
