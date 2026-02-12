@@ -2,7 +2,12 @@ import { formDataToObject } from "@trpc/server/unstable-core-do-not-import";
 import z from "zod";
 import { pool } from "../..";
 import { authenticatedProcedure } from "../../trpc";
-import { validateFile, uploadFileToMinio } from "../../util";
+import {
+  validateFile,
+  uploadFileToMinio,
+  type MinioObject,
+  deleteFileFromMinio,
+} from "../../util";
 import { Reply } from "../../schemas";
 
 const CreateReplyInput = z.object({
@@ -27,11 +32,11 @@ export const createReply = authenticatedProcedure
         INSERT INTO comments (user_id, parent_comment_id, post_id, body, media) VALUES ($1, $2, $3, $4, $5) RETURNING * 
       `;
 
-    let mediaUrl: string | undefined;
+    let media: MinioObject | undefined;
     if (file) {
       validateFile(file);
 
-      mediaUrl = await uploadFileToMinio(file);
+      media = await uploadFileToMinio(file);
     }
 
     const values = [
@@ -39,14 +44,20 @@ export const createReply = authenticatedProcedure
       comment_id,
       post_id,
       body,
-      mediaUrl,
+      media?.url,
     ];
 
-    // TODO go back and delete the Minio file if postgres upload fails
-    const postgresRes = await pool.query(query, values);
-    return {
-      ...postgresRes.rows[0],
-      // Default values that are fetched from joins in other gets
-      username: opts.ctx.authorization.username,
-    };
+    try {
+      const postgresRes = await pool.query(query, values);
+      return {
+        ...postgresRes.rows[0],
+        // Default values that are fetched from joins in other gets
+        username: opts.ctx.authorization.username,
+      };
+    } catch (err) {
+      if (media) {
+        deleteFileFromMinio(media.name);
+      }
+      throw err;
+    }
   });

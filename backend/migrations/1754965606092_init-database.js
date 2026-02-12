@@ -4,14 +4,14 @@
 export const up = (pgm) => {
   pgm.createTable("users", {
     id: "id",
-    username: { type: "varchar(20)", notNull: true },
+    username: { type: "text", notNull: true },
     created_at: {
       type: "timestamptz",
       notNull: true,
       default: pgm.func("current_timestamp"),
     },
     password: {
-      type: "varchar",
+      type: "text",
       notNull: true,
     },
   });
@@ -119,6 +119,6 @@ export const up = (pgm) => {
       notNull: true,
       default: pgm.func("current_timestamp"),
     },
-    tag: { type: "varchar(180)", notNull: true },
+    tag: { type: "text", notNull: true },
   });
 };

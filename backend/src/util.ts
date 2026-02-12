@@ -47,14 +47,20 @@ export const formDataToObject = (formData: FormData) => {
   return obj;
 };
 
-export const uploadFileToMinio = async (file: File) => {
+export type MinioObject = { url: string; name: string };
+
+export const uploadFileToMinio = async (file: File): Promise<MinioObject> => {
   const buffer = Buffer.from(await file.arrayBuffer());
   const uuid = randomUUID();
   await minioClient.putObject(publicBucket, uuid, buffer, file.size, {
     "content-type": file.type,
   });
 
-  return `${minioUrl}/${publicBucket}/${uuid}`;
+  return { url: `${minioUrl}/${publicBucket}/${uuid}`, name: uuid };
+};
+
+export const deleteFileFromMinio = async (name: string) => {
+  minioClient.removeObject(publicBucket, name);
 };
 
 // Maybe replace this method with a zod fileSchema with .refine

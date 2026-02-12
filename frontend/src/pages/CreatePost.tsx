@@ -10,11 +10,10 @@ import { useLocation } from "wouter";
 
 const tagShape = z.string().toLowerCase().trim().max(180).min(1);
 
-// TODO Gotta add title and body length to the database
 const createPostForm = z.object({
   title: z.string().trim().min(1).max(300),
   body: z.string().trim().max(40000),
-  tag: z.string().trim(),
+  tag: z.string().toLowerCase().trim(),
   tags: z
     .array(
       z.object({
@@ -44,6 +43,8 @@ export const CreatePost = () => {
     control,
     watch,
     setValue,
+    setError,
+    clearErrors,
   } = useForm<CreatePostForm>({
     resolver: zodResolver(createPostForm),
   });
@@ -76,12 +77,17 @@ export const CreatePost = () => {
     createPostMutation.mutate(formData);
   });
 
-  {
-    /* TODO run tagShape.parse() on watch("tag") */
-  }
-  const addTag = () => {
-    append({ value: watch("tag").toLowerCase() });
-    setValue("tag", "");
+  const addTag = async () => {
+    clearErrors();
+    try {
+      tagShape.parse(watch("tag"));
+      append({ value: watch("tag").toLowerCase() });
+      setValue("tag", "");
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        setError("tag", { type: "custom", message: error.message });
+      }
+    }
   };
 
   return (
@@ -126,35 +132,39 @@ export const CreatePost = () => {
               fullWidth
               label="Tags"
               placeholder="Enter a tag"
-              error={!!errors.tags}
+              error={!!errors.tags || !!errors.tag}
               multiline
               helperText={
-                Array.isArray(errors.tags) ? (
-                  <>
-                    {errors.tags
-                      .map((tagObj, index) => {
-                        if (tagObj) {
-                          return (
-                            <React.Fragment key={`tag-${index}`}>
-                              <span
-                                style={{
-                                  overflowWrap: "break-word",
-                                  wordBreak: "break-all",
-                                }}
-                              >{`"${watch("tags")[index].value.slice(0, 180)}"`}</span>
-                              {`${tagObj?.value?.message}\r\n`}
-                              <br />
-                            </React.Fragment>
-                          );
-                        }
+                <>
+                  {errors.tags &&
+                    (Array.isArray(errors.tags) ? (
+                      <>
+                        {errors.tags
+                          .map((tagObj, index) => {
+                            if (tagObj) {
+                              return (
+                                <React.Fragment key={`tag-${index}`}>
+                                  <span
+                                    style={{
+                                      overflowWrap: "break-word",
+                                      wordBreak: "break-all",
+                                    }}
+                                  >{`"${watch("tags")[index].value.slice(0, 180)}"`}</span>
+                                  {`${tagObj?.value?.message}\r\n`}
+                                  <br />
+                                </React.Fragment>
+                              );
+                            }
 
-                        return tagObj;
-                      })
-                      .filter(Boolean)}
-                  </>
-                ) : (
-                  errors.tags?.message
-                )
+                            return tagObj;
+                          })
+                          .filter(Boolean)}
+                      </>
+                    ) : (
+                      errors.tags.message
+                    ))}
+                  {errors.tag?.message}
+                </>
               }
               {...register("tag")}
               onKeyDown={(e) => {

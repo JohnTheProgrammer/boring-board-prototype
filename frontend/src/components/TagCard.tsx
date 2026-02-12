@@ -58,7 +58,10 @@ export const TagCard = (props: { tag: any }) => {
               post: RouterOutput["tags"]["getMany"]["tags"][0]["top_posts"][0],
               index: number,
             ) => (
-              <UnstyledLink href={`/post/${post.post_id}`}>
+              <UnstyledLink
+                href={`/post/${post.post_id}`}
+                key={`tag-card-post-${post.post_id}`}
+              >
                 <Box
                   key={`${props.tag.tag}-${post.title}-${index}`}
                   sx={{ backgroundColor: "action.hover" }}

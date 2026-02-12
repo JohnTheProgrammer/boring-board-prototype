@@ -1,7 +1,13 @@
 import z from "zod";
 import { pool } from "../..";
 import { authenticatedProcedure } from "../../trpc";
-import { uploadFileToMinio, validateFile, formDataToObject } from "../../util";
+import {
+  uploadFileToMinio,
+  validateFile,
+  formDataToObject,
+  type MinioObject,
+  deleteFileFromMinio,
+} from "../../util";
 
 const tagShape = z.string().toLowerCase().trim().max(180).min(1);
 
@@ -49,30 +55,47 @@ export const create = authenticatedProcedure
   .mutation(async (opts) => {
     const { title, body, file, tags } = opts.input;
 
-    let mediaUrl: string | undefined;
+    let media: MinioObject | undefined;
+    let client;
     if (file) {
       validateFile(file);
 
-      mediaUrl = await uploadFileToMinio(file);
+      media = await uploadFileToMinio(file);
     }
 
     const createPostValues = [
       opts.ctx.authorization.userId,
       title,
       body,
-      mediaUrl,
+      media?.url,
     ];
 
-    // TODO go back and delete the Minio file if postgres upload fails
-    // TODO return the whole post object so the frontend can update local query cache
-    const createPostRes = await pool.query(createPostQuery, createPostValues);
-
-    if (tags) {
-      const createTagsValues = [createPostRes.rows[0].id, tags];
-      await pool.query(createTagsQuery, createTagsValues);
+    try {
+      client = await pool.connect();
+      await client.query("BEGIN");
+      const createPostRes = await client.query(
+        createPostQuery,
+        createPostValues,
+      );
+      if (tags) {
+        const createTagsValues = [createPostRes.rows[0].id, tags];
+        await client.query(createTagsQuery, createTagsValues);
+      }
+      await client.query("COMMIT");
+      return {
+        postId: createPostRes.rows[0].id,
+      };
+    } catch (err) {
+      if (client) {
+        await client.query("ROLLBACK");
+      }
+      if (media) {
+        deleteFileFromMinio(media.name);
+      }
+      throw err;
+    } finally {
+      if (client) {
+        client.release();
+      }
     }
-
-    return {
-      postId: createPostRes.rows[0].id,
-    };
   });

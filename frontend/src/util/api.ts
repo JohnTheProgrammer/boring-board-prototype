@@ -48,11 +48,6 @@ export const getPosts = async ({}) => {
   return {};
 };
 
-export const getPost = async () => {
-  await sleep();
-  return {};
-};
-
 export const getChatLogs = async () => {
   await sleep();
   return {};
