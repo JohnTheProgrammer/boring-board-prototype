@@ -1,6 +1,8 @@
 import React from "react";
 import { Route, Switch } from "wouter";
-import { Box, Container, CssBaseline } from "@mui/material";
+import Box from "@mui/material/Box";
+import Container from "@mui/material/Container";
+import CssBaseline from "@mui/material/CssBaseline";
 import { Chat } from "./pages/Chat";
 import { CreatePost } from "./pages/CreatePost";
 import { Login } from "./pages/Login";

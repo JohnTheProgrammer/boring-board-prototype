@@ -10,15 +10,16 @@ import {
   useLocation,
   type StringRouteParams,
 } from "wouter";
-import { IconButton, Popover, Stack } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
+import IconButton from "@mui/material/IconButton";
+import Popover from "@mui/material/Popover";
+import Stack from "@mui/material/Stack";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { trpc } from "../util/api";
 import { MoreHoriz } from "@mui/icons-material";
 import { formatDateString } from "../util/formatDateString";
 import { PostCard } from "../components/PostCard";
 import { CommentCard } from "../components/CommentCard";
 import { ReplyCard } from "../components/ReplyCard";
-import { useSyncPostsCache } from "./Posts";
 
 const ProfileVotes = () => {
   return (
@@ -34,35 +35,83 @@ const ProfileVotes = () => {
 };
 
 const ProfileComments = ({ username }: { username: string }) => {
-  const query = useQuery(
-    trpc.comments.getManyByUsername.queryOptions({ username }),
+  const query = useInfiniteQuery(
+    trpc.comments.getManyByUsername.infiniteQueryOptions(
+      { username },
+      {
+        getNextPageParam: (lastPage) => {
+          if (lastPage.length === 0) {
+            return undefined;
+          }
+          return lastPage[lastPage.length - 1].id;
+        },
+      },
+    ),
   );
   return (
     <Stack gap={1}>
       {query.isSuccess &&
-        query.data.comments.map((comment) =>
-          "parent_comment_id" in comment ? (
-            <ReplyCard key={`reply=${comment.id}`} reply={comment} />
-          ) : (
-            <CommentCard key={`comment-${comment.id}`} comment={comment} />
+        query.data.pages.map((page) =>
+          page.map((comment) =>
+            "parent_comment_id" in comment ? (
+              <ReplyCard key={`reply=${comment.id}`} reply={comment} />
+            ) : (
+              <CommentCard
+                key={`comment-${comment.id}`}
+                commentId={comment.id}
+              />
+            ),
           ),
         )}
+      {query.hasNextPage && (
+        <Box display="flex" justifyContent="center">
+          <Button
+            variant="outlined"
+            onClick={() => query.fetchNextPage()}
+            disabled={query.isFetching}
+          >
+            Load More
+          </Button>
+        </Box>
+      )}
     </Stack>
   );
 };
 
 const ProfilePosts = ({ username }: { username: string }) => {
-  const query = useQuery(
-    trpc.posts.getManyByUsername.queryOptions({ username }),
+  const query = useInfiniteQuery(
+    trpc.posts.getMany.byUsername.infiniteQueryOptions(
+      { username },
+      {
+        getNextPageParam: (lastPage) => {
+          if (lastPage.length === 0) {
+            return undefined;
+          }
+          return lastPage[lastPage.length - 1].id;
+        },
+      },
+    ),
   );
-  useSyncPostsCache(query);
 
   return (
     <Stack gap={1}>
       {query.isSuccess &&
-        query.data.posts.map((post) => (
-          <PostCard key={`post-${post.id}`} postId={post.id} />
-        ))}
+        query.data.pages.map((page) =>
+          page.map((post) => (
+            <PostCard key={`post-${post.id}`} postId={post.id} />
+          )),
+        )}
+      {query.hasNextPage && (
+        <Box display="flex" justifyContent="center">
+          <Button
+            variant="outlined"
+            onClick={() => query.fetchNextPage()}
+            disabled={query.isFetching}
+          >
+            Load More
+          </Button>
+        </Box>
+      )}
     </Stack>
   );
 };

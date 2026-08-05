@@ -6,28 +6,31 @@ import {
   ExpandMore,
   Reply,
 } from "@mui/icons-material";
-import {
-  Card,
-  CardContent,
-  Typography,
-  Divider,
-  CardActions,
-  Box,
-  IconButton,
-  Popover,
-  Button,
-  CardMedia,
-  Stack,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  CardActionArea,
-} from "@mui/material";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import Divider from "@mui/material/Divider";
+import CardActions from "@mui/material/CardActions";
+import Box from "@mui/material/Box";
+import IconButton from "@mui/material/IconButton";
+import Popover from "@mui/material/Popover";
+import Button from "@mui/material/Button";
+import CardMedia from "@mui/material/CardMedia";
+import Stack from "@mui/material/Stack";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
+import CardActionArea from "@mui/material/CardActionArea";
 import { trpc, trpcClient, type RouterOutput } from "../util/api";
 import { formatDateString } from "../util/formatDateString";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useInfiniteQuery,
+  useQueryClient,
+  useQuery,
+} from "@tanstack/react-query";
 import { getVoteChange } from "../util/getVoteChange";
 import { AuthenticatedContext } from "../App";
 import {
@@ -80,11 +83,7 @@ export const CommentContent = ({
   );
 };
 
-export const CommentCard = ({
-  comment,
-}: {
-  comment: RouterOutput["comments"]["getCommentsByPostId"]["comments"][0];
-}) => {
+export const CommentCard = ({ commentId }: { commentId: number }) => {
   const queryClient = useQueryClient();
   const isAuthenticated = React.useContext(AuthenticatedContext);
   const [openCommentPopover, setOpenCommentPopover] = React.useState(false);
@@ -94,10 +93,20 @@ export const CommentCard = ({
   const [deleteDialogVisible, setDeleteDialogVisible] = React.useState(false);
   const [location, navigate] = useLocation();
 
-  const getRepliesByCommentIdQuery = useQuery(
-    trpc.comments.getRepliesByCommentId.queryOptions(
-      { commentId: comment.id },
+  const { data: comment } = useQuery(
+    trpc.comments.getById.queryOptions({ commentId }, { enabled: false }),
+  );
+
+  const getRepliesByCommentIdQuery = useInfiniteQuery(
+    trpc.comments.getRepliesByCommentId.infiniteQueryOptions(
+      { commentId: commentId },
       {
+        getNextPageParam: (lastPage) => {
+          if (lastPage.length === 0) {
+            return undefined;
+          }
+          return lastPage[lastPage.length - 1].id;
+        },
         enabled: false,
       },
     ),
@@ -120,27 +129,19 @@ export const CommentCard = ({
       const { modifier, newVote } = getVoteChange(prevUserVote, vote);
 
       const getByIdQueryData = queryClient.getQueryData(
-        trpc.posts.getById.queryKey({ postId: comment.post_id }),
+        trpc.comments.getById.queryKey({ commentId }),
       );
 
       queryClient.setQueryData(
-        trpc.comments.getCommentsByPostId.queryKey({ postId: comment.post_id }),
-        (comments) => {
-          if (!comments) {
-            return comments;
+        trpc.comments.getById.queryKey({ commentId }),
+        (comment) => {
+          if (!comment) {
+            return comment;
           }
-
           return {
-            comments: comments.comments.map((mapComment) => {
-              if (commentId === mapComment.id) {
-                return {
-                  ...comment,
-                  votes: comment.votes + modifier,
-                  user_vote: newVote,
-                };
-              }
-              return mapComment;
-            }),
+            ...comment,
+            votes: comment.votes + modifier,
+            user_vote: newVote,
           };
         },
       );
@@ -151,7 +152,7 @@ export const CommentCard = ({
     onError: (_err, _variables, context) => {
       if (context && context.getByIdQueryData) {
         queryClient.setQueryData(
-          trpc.posts.getById.queryKey({ postId: comment.post_id }),
+          trpc.comments.getById.queryKey({ commentId }),
           context.getByIdQueryData,
         );
       }
@@ -162,7 +163,9 @@ export const CommentCard = ({
     trpc.comments.deleteById.mutationOptions({
       onSuccess: (_, { commentId }) => {
         queryClient.setQueryData(
-          trpc.posts.getById.queryKey({ postId: comment.post_id }),
+          trpc.posts.getById.queryKey({
+            postId: comment!.post_id,
+          }),
           (post) => {
             if (!post) {
               return post;
@@ -176,19 +179,17 @@ export const CommentCard = ({
         );
 
         queryClient.setQueryData(
-          trpc.comments.getCommentsByPostId.queryKey({
-            postId: comment.post_id,
+          trpc.comments.getManyByPostId.queryKey({
+            postId: comment!.post_id,
           }),
           (comments) => {
             if (!comments) {
               return comments;
             }
 
-            return {
-              comments: comments.comments.filter(
-                (filterComment) => filterComment.id !== commentId,
-              ),
-            };
+            return comments.filter(
+              (filterComment) => filterComment.id !== commentId,
+            );
           },
         );
 
@@ -201,42 +202,28 @@ export const CommentCard = ({
     trpc.comments.createReply.mutationOptions({
       onSuccess: (reply) => {
         queryClient.setQueryData(
-          trpc.comments.getCommentsByPostId.queryKey({
-            postId: comment.post_id,
+          ["comments", "getById", commentId],
+          (comment: RouterOutput["comments"]["getManyByPostId"][0]) => ({
+            ...comment,
+            replies_amount: comment.replies_amount + 1,
           }),
-          (comments) => {
-            if (!comments) {
-              return comments;
-            }
-
-            return {
-              comments: comments.comments.map((mapComment) =>
-                comment.id === mapComment.id
-                  ? {
-                      ...comment,
-                      replies_amount: comment.replies_amount + 1,
-                    }
-                  : mapComment,
-              ),
-            };
-          },
         );
 
         queryClient.setQueryData(
           trpc.comments.getRepliesByCommentId.queryKey({
-            commentId: comment.id,
+            commentId: commentId,
           }),
           (replies) => {
             if (!replies) {
               return replies;
             }
-            return { replies: [...replies.replies, reply] };
+            return [...replies, reply];
           },
         );
 
         queryClient.setQueryData(
           trpc.posts.getById.queryKey({
-            postId: comment.post_id,
+            postId: comment!.post_id,
           }),
           (post) => {
             if (!post) {
@@ -254,6 +241,18 @@ export const CommentCard = ({
   );
 
   const isVotingEnabled = !!isAuthenticated && !voteMutation.isPending;
+
+  if (!comment) {
+    return (
+      <Card>
+        <CardContent>
+          <Typography>
+            Comment data not found in comments.getById query cache
+          </Typography>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const onSubmit = (formValues: CreateCommentSchema, reset: () => void) => {
     const formData = new FormData();
@@ -396,7 +395,7 @@ export const CommentCard = ({
       {(showReplyForm ||
         (showReplies &&
           getRepliesByCommentIdQuery.data &&
-          getRepliesByCommentIdQuery.data.replies.length > 0)) && (
+          getRepliesByCommentIdQuery.data.pages.length > 0)) && (
         <Stack
           gap={2}
           sx={{
@@ -411,11 +410,26 @@ export const CommentCard = ({
               disabled={!isAuthenticated || createReplyMutation.isPending}
             />
           )}
-          {showReplies &&
-            getRepliesByCommentIdQuery.data &&
-            getRepliesByCommentIdQuery.data.replies.map((reply) => (
-              <ReplyCard key={`reply-${reply.id}`} reply={reply} />
-            ))}
+          {showReplies && getRepliesByCommentIdQuery.data && (
+            <>
+              {getRepliesByCommentIdQuery.data.pages.map((page) =>
+                page.map((reply) => (
+                  <ReplyCard key={`reply-${reply.id}`} reply={reply} />
+                )),
+              )}
+              {getRepliesByCommentIdQuery.hasNextPage && (
+                <Box display="flex" justifyContent="center">
+                  <Button
+                    variant="outlined"
+                    onClick={() => getRepliesByCommentIdQuery.fetchNextPage()}
+                    disabled={getRepliesByCommentIdQuery.isFetching}
+                  >
+                    Load More
+                  </Button>
+                </Box>
+              )}
+            </>
+          )}
         </Stack>
       )}
 

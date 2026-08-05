@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { trpc } from "../util/api";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Stack } from "@mui/material";
+import Stack from "@mui/material/Stack";
 
 const FormSchema = z.object({
   username: z.string().trim().min(1).max(30),

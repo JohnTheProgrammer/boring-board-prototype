@@ -1,6 +1,6 @@
 import React from "react";
 import { PermMedia } from "@mui/icons-material";
-import { Button } from "@mui/material";
+import Button from "@mui/material/Button";
 import styled from "@emotion/styled";
 
 const VisuallyHiddenInput = styled("input")({

@@ -1,8 +1,16 @@
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
-import { CircularProgress, MenuItem, Select } from "@mui/material";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import CircularProgress from "@mui/material/CircularProgress";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
+import Button from "@mui/material/Button";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { trpc } from "../util/api";
 import { PostCard } from "../components/PostCard";
 import type { StringRouteParams } from "wouter";
@@ -24,10 +32,20 @@ export const Post = ({
   const postQuery = useQuery(
     trpc.posts.getById.queryOptions({ postId: Number(params.id) }),
   );
-  const commentsQuery = useQuery(
-    trpc.comments.getCommentsByPostId.queryOptions({
-      postId: Number(params.id),
-    }),
+  const commentsQuery = useInfiniteQuery(
+    trpc.comments.getManyByPostId.infiniteQueryOptions(
+      {
+        postId: Number(params.id),
+      },
+      {
+        getNextPageParam: (lastPage) => {
+          if (lastPage.length === 0) {
+            return undefined;
+          }
+          return lastPage[lastPage.length - 1].id;
+        },
+      },
+    ),
   );
 
   const createCommentMutation = useMutation(
@@ -58,17 +76,14 @@ export const Post = ({
         );
 
         queryClient.setQueryData(
-          trpc.comments.getCommentsByPostId.queryKey({
+          trpc.comments.getManyByPostId.queryKey({
             postId: Number(params.id),
           }),
           (comments) => {
             if (!comments) {
               return comments;
             }
-
-            return {
-              comments: [comment, ...comments.comments],
-            };
+            return [comment, ...comments];
           },
         );
 
@@ -121,9 +136,22 @@ export const Post = ({
           <CircularProgress />
         </Box>
       ) : (
-        commentsQuery.data.comments.map((comment) => (
-          <CommentCard key={`comment-${comment.id}`} comment={comment} />
-        ))
+        commentsQuery.data.pages.map((page) =>
+          page.map((comment) => (
+            <CommentCard key={`comment-${comment.id}`} commentId={comment.id} />
+          )),
+        )
+      )}
+      {commentsQuery.hasNextPage && (
+        <Box display="flex" justifyContent="center">
+          <Button
+            variant="outlined"
+            onClick={() => commentsQuery.fetchNextPage()}
+            disabled={commentsQuery.isFetching}
+          >
+            Load More
+          </Button>
+        </Box>
       )}
     </Stack>
   );

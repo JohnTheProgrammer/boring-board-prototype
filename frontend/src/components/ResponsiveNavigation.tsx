@@ -10,22 +10,20 @@ import {
   Settings,
   Tag,
 } from "@mui/icons-material";
-import {
-  Typography,
-  List,
-  ListItem,
-  Button,
-  ListItemIcon,
-  ListItemText,
-  Box,
-  Divider,
-  Drawer,
-  useMediaQuery,
-  useTheme,
-  AppBar,
-  IconButton,
-  Toolbar,
-} from "@mui/material";
+import Typography from "@mui/material/Typography";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import Button from "@mui/material/Button";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import Box from "@mui/material/Box";
+import Divider from "@mui/material/Divider";
+import Drawer from "@mui/material/Drawer";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import AppBar from "@mui/material/AppBar";
+import IconButton from "@mui/material/IconButton";
+import Toolbar from "@mui/material/Toolbar";
+import { useTheme } from "@mui/material/styles";
 import { UnstyledLink } from "./UnstyledLink";
 import React from "react";
 import { AuthenticatedContext } from "../App";

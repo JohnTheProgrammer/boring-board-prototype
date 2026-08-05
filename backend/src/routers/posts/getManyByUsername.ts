@@ -3,7 +3,10 @@ import { publicProcedure } from "../../trpc.ts";
 import { pool } from "../../index.ts";
 import { PostsCollection } from "../../schemas.ts";
 
-const GetManyByUsernameInput = z.object({ username: z.string() });
+const GetManyByUsernameInput = z.object({
+  username: z.string(),
+  cursor: z.int().nullish(),
+});
 
 export const getManyByUsername = publicProcedure
   .input(GetManyByUsernameInput)
@@ -11,6 +14,16 @@ export const getManyByUsername = publicProcedure
   .query(async (opts) => {
     const userId = opts.ctx.authorization?.userId ?? null;
     const values = [userId, opts.input.username];
+    const whereConditions: string[] = ["users.username = $2"];
+
+    if (opts.input.cursor) {
+      whereConditions.push(`posts.id < ${opts.input.cursor}`);
+    }
+
+    const whereClause =
+      whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(" AND ")}`
+        : "";
 
     const query = `
       SELECT
@@ -53,14 +66,12 @@ export const getManyByUsername = publicProcedure
         WHERE comments.post_id = posts.id
       ) AS comments ON TRUE
       
-      WHERE users.username = $2
+      ${whereClause}
       ORDER BY posts.created_at DESC
-      ;
+      LIMIT 10;
     `;
 
     const postgresRes = await pool.query(query, values);
 
-    return {
-      posts: postgresRes.rows,
-    };
+    return postgresRes.rows;
   });

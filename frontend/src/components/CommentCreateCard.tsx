@@ -1,4 +1,7 @@
-import { Paper, TextField, Box, Button } from "@mui/material";
+import Paper from "@mui/material/Paper";
+import TextField from "@mui/material/TextField";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import { MediaUploadButton } from "./MediaUploadButton";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";

@@ -1,17 +1,29 @@
 import z from "zod";
 import { pool } from "../..";
 import { publicProcedure } from "../../trpc";
-import { Comment, Reply } from "../../schemas";
+import { Comment, CommentsCollection, Reply } from "../../schemas";
 
-const GetManyByUsername = z.object({ username: z.string() });
+const GetManyByUsername = z.object({
+  username: z.string(),
+  cursor: z.int().nullish(),
+});
 
 export const getManyByUsername = publicProcedure
   .input(GetManyByUsername)
-  .output(z.object({ comments: z.array(z.union([Comment, Reply])) }))
+  .output(CommentsCollection)
   .query(async (opts) => {
     const userId = opts.ctx.authorization?.userId ?? null;
-
     const values = [opts.input.username, userId];
+    const whereConditions: string[] = ["users.username = $1"];
+
+    if (opts.input.cursor) {
+      whereConditions.push(`comments.id < ${opts.input.cursor}`);
+    }
+
+    const whereClause =
+      whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(" AND ")}`
+        : "";
 
     const query = `
         SELECT 
@@ -47,12 +59,11 @@ export const getManyByUsername = publicProcedure
           WHERE replies.parent_comment_id = comments.id
         ) replies ON TRUE
 
-        WHERE users.username = $1
-        ORDER BY comments.created_at DESC;
+        ${whereClause}
+        ORDER BY comments.created_at DESC
+        LIMIT 10;
       `;
 
     const result = await pool.query(query, values);
-    return {
-      comments: result.rows,
-    };
+    return result.rows;
   });

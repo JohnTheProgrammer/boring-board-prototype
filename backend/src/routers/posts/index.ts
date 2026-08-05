@@ -8,9 +8,11 @@ import { getManyByUsername } from "./getManyByUsername";
 
 export const postsRouter = router({
   create,
-  getMany,
+  getMany: router({
+    all: getMany,
+    byUsername: getManyByUsername,
+  }),
   getById,
-  vote,
   deleteById,
-  getManyByUsername,
+  vote,
 });

@@ -10,6 +10,7 @@ const GetManyInput = z.object({
   search: z.string().trim().nullish(),
   createdAt: z.enum(createdAtValues).nullish(),
   orderBy: z.enum(orderByValues).nullish(),
+  cursor: z.int().nullish(),
 });
 
 export const getMany = publicProcedure
@@ -19,6 +20,10 @@ export const getMany = publicProcedure
     const userId = opts.ctx.authorization?.userId ?? null;
     const values = [userId];
     const whereConditions: string[] = [];
+
+    if (opts.input.cursor) {
+      whereConditions.push(`posts.id < ${opts.input.cursor}`);
+    }
 
     if (opts.input.search) {
       values.push(opts.input.search);
@@ -125,12 +130,10 @@ export const getMany = publicProcedure
       
       ${whereClause}
       ${orderClause}
-      ;
+      LIMIT 10;
     `;
 
     const postgresRes = await pool.query(query, values);
 
-    return {
-      posts: postgresRes.rows,
-    };
+    return postgresRes.rows;
   });

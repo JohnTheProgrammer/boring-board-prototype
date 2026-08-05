@@ -108,6 +108,9 @@ export const up = (pgm) => {
     unique: ["user_id", "comment_id"],
   });
 
+  // TODO this is called a junction table. But I'm missing a "master" tags table that holds only unique tags instead of duplicate tags.
+  // ex: this would be post_tags. It would hold an id for a post and an id for a tag. Each time a post is created an upsert is made into
+  // the tags table and post_tags would then be created with the post id and tag id
   pgm.createTable("tags", {
     post_id: {
       type: "integer",

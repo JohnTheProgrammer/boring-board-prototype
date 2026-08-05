@@ -16,15 +16,13 @@ import {
 import CardMedia from "@mui/material/CardMedia";
 import CardActions from "@mui/material/CardActions";
 import { formatDateString } from "../util/formatDateString";
-import {
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Divider,
-} from "@mui/material";
+import Chip from "@mui/material/Chip";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
+import Divider from "@mui/material/Divider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { trpcClient, trpc } from "../util/api";
 import { useLocation } from "wouter";

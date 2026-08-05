@@ -1,5 +1,10 @@
 import React from "react";
-import { Box, Button, Chip, Stack, TextField, Typography } from "@mui/material";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { MediaUploadButton } from "../components/MediaUploadButton";
 import { trpc } from "../util/api";
 import z from "zod";

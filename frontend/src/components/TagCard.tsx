@@ -1,13 +1,11 @@
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  IconButton,
-  Divider,
-  Stack,
-  Chip,
-} from "@mui/material";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import IconButton from "@mui/material/IconButton";
+import Divider from "@mui/material/Divider";
+import Stack from "@mui/material/Stack";
+import Chip from "@mui/material/Chip";
 import { Article, ThumbUp } from "@mui/icons-material";
 import { UnstyledLink } from "./UnstyledLink";
 import type { RouterOutput } from "../util/api";
@@ -58,9 +56,11 @@ export const TagCard = (props: { tag: any }) => {
               post: RouterOutput["tags"]["getMany"]["tags"][0]["top_posts"][0],
               index: number,
             ) => (
-              <UnstyledLink href={`/post/${post.post_id}`}>
+              <UnstyledLink
+                key={`${props.tag.tag}-${post.title}-${index}`}
+                href={`/post/${post.post_id}`}
+              >
                 <Box
-                  key={`${props.tag.tag}-${post.title}-${index}`}
                   sx={{ backgroundColor: "action.hover" }}
                   display="flex"
                   justifyContent="space-between"

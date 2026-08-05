@@ -21,10 +21,10 @@ export const userRouter = router({
         COALESCE(comments.comment_amount, 0)::int AS comment_amount
         FROM users 
         LEFT JOIN LATERAL (
-          SELECT COUNT(posts.*) as post_amount,
+          SELECT COUNT(DISTINCT posts.id) as post_amount,
           COALESCE(SUM(votes.vote), 0)::int as votes_total 
           FROM posts 
-          INNER JOIN votes
+          LEFT JOIN votes
           ON votes.post_id = posts.id  
           WHERE
           posts.user_id = users.id 

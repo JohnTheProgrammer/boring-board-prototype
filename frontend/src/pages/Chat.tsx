@@ -1,18 +1,16 @@
 import React from "react";
 import { getChatLogs } from "../util/api";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Box,
-  Button,
-  ButtonGroup,
-  CircularProgress,
-  Divider,
-  IconButton,
-  Paper,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import ButtonGroup from "@mui/material/ButtonGroup";
+import CircularProgress from "@mui/material/CircularProgress";
+import Divider from "@mui/material/Divider";
+import IconButton from "@mui/material/IconButton";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { Link, Route, Switch, useLocation } from "wouter";
 import { UnstyledLink } from "../components/UnstyledLink";
 import { Info, InfoOutline } from "@mui/icons-material";

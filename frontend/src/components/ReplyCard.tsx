@@ -1,17 +1,15 @@
 import React from "react";
-import {
-  Card,
-  Divider,
-  CardActions,
-  Box,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  CardActionArea,
-} from "@mui/material";
+import Card from "@mui/material/Card";
+import Divider from "@mui/material/Divider";
+import CardActions from "@mui/material/CardActions";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogActions from "@mui/material/DialogActions";
+import CardActionArea from "@mui/material/CardActionArea";
 import { AuthenticatedContext } from "../App";
 import { CommentContent } from "./CommentCard";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -42,7 +40,7 @@ export const ReplyCard = ({ reply }: { reply: any }) => {
         );
 
         queryClient.setQueryData(
-          trpc.comments.getCommentsByPostId.queryKey({ postId: reply.post_id }),
+          trpc.comments.getManyByPostId.queryKey({ postId: reply.post_id }),
           (comments) => {
             if (!comments) {
               return comments;

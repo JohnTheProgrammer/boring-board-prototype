@@ -50,9 +50,7 @@ export const Post = PostsTable.extend({
 });
 
 // Rename this to PagedPosts once I add pagination
-export const PostsCollection = z.object({
-  posts: z.array(Post),
-});
+export const PostsCollection = z.array(Post);
 
 export const Comment = z.object({
   username: z.string(),
@@ -66,9 +64,7 @@ export const Comment = z.object({
   replies_amount: z.int(),
 });
 
-export const CommentsCollection = z.object({
-  comments: z.array(Comment),
-});
+export const CommentsCollection = z.array(Comment);
 
 export const Reply = z.object({
   username: z.string(),
@@ -81,9 +77,7 @@ export const Reply = z.object({
   media: z.string().nullish(),
 });
 
-export const RepliesCollection = z.object({
-  replies: z.array(Reply),
-});
+export const RepliesCollection = z.array(Reply);
 
 export const Tag = z.object({
   tag: z.string(),
@@ -98,9 +92,7 @@ export const Tag = z.object({
     .array(),
 });
 
-export const TagsCollection = z.object({
-  tags: z.array(Tag),
-});
+export const TagsCollection = z.array(Tag);
 
 export const User = z.object({
   username: z.string(),

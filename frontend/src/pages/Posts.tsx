@@ -2,20 +2,18 @@ import React from "react";
 import Stack from "@mui/material/Stack";
 import { PostCard } from "../components/PostCard";
 import {
-  useQuery,
+  useInfiniteQuery,
   useQueryClient,
-  type UseQueryResult,
+  type UseInfiniteQueryResult,
 } from "@tanstack/react-query";
-import { trpc, type RouterOutput } from "../util/api";
+import { trpc, type RouterInput, type RouterOutput } from "../util/api";
 import CircularProgress from "@mui/material/CircularProgress";
-import {
-  Button,
-  InputAdornment,
-  InputBase,
-  MenuItem,
-  Paper,
-  TextField,
-} from "@mui/material";
+import Button from "@mui/material/Button";
+import InputAdornment from "@mui/material/InputAdornment";
+import InputBase from "@mui/material/InputBase";
+import MenuItem from "@mui/material/MenuItem";
+import Paper from "@mui/material/Paper";
+import TextField from "@mui/material/TextField";
 import Box from "@mui/system/Box";
 import { Search } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
@@ -23,6 +21,7 @@ import z from "zod";
 import { useSearchParams } from "wouter";
 import type { TRPCClientErrorLike } from "@trpc/client";
 import type { AppRouter } from "../../../backend/src";
+import type { TRPCInfiniteData } from "@trpc/tanstack-react-query";
 
 const createdAtValues = ["Anytime", "Hour", "Today", "Week", "Month", "Year"];
 const orderByValues = ["Newest", "Top Voted", "Controversial", "Worst Voted"];
@@ -35,38 +34,26 @@ const getManyForm = z.object({
 
 type GetManyForm = z.infer<typeof getManyForm>;
 
-// TODO investigate if there's a better way to have a "global context" for posts
-export const useSyncPostsCache = (
-  query: UseQueryResult<
-    RouterOutput["posts"]["getMany"],
-    TRPCClientErrorLike<AppRouter>
-  >,
-) => {
-  const queryClient = useQueryClient();
-  React.useEffect(() => {
-    if (query.isSuccess) {
-      query.data.posts.forEach((post) => {
-        queryClient.setQueryData(
-          trpc.posts.getById.queryKey({ postId: post.id }),
-          post,
-        );
-      });
-    }
-  }, [query]);
-};
-
 export const Posts = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { register, handleSubmit } = useForm<GetManyForm>();
-  const query = useQuery(
-    trpc.posts.getMany.queryOptions({
-      search: searchParams.get("search"),
-      createdAt: searchParams.get("createdAt"),
-      orderBy: searchParams.get("orderBy"),
-    }),
+  const query = useInfiniteQuery(
+    trpc.posts.getMany.all.infiniteQueryOptions(
+      {
+        search: searchParams.get("search"),
+        createdAt: searchParams.get("createdAt"),
+        orderBy: searchParams.get("orderBy"),
+      },
+      {
+        getNextPageParam: (lastPage) => {
+          if (lastPage.length === 0) {
+            return undefined;
+          }
+          return lastPage[lastPage.length - 1].id;
+        },
+      },
+    ),
   );
-
-  useSyncPostsCache(query);
 
   const onSubmit = handleSubmit(async (formValues) => {
     setSearchParams(formValues);
@@ -140,12 +127,22 @@ export const Posts = () => {
         </Box>
       ) : (
         <>
-          {query.data.posts.map((post) => (
-            <PostCard key={`post-${post.id}`} postId={post.id} />
-          ))}
-          <Box display="flex" justifyContent="center">
-            <Button variant="outlined">Load More</Button>
-          </Box>
+          {query.data.pages.map((page) =>
+            page.map((post) => (
+              <PostCard key={`post-${post.id}`} postId={post.id} />
+            )),
+          )}
+          {query.hasNextPage && (
+            <Box display="flex" justifyContent="center">
+              <Button
+                variant="outlined"
+                onClick={() => query.fetchNextPage()}
+                disabled={query.isFetching}
+              >
+                Load More
+              </Button>
+            </Box>
+          )}
         </>
       )}
     </Stack>
