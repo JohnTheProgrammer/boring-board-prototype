@@ -49,7 +49,6 @@ export const Post = PostsTable.extend({
   tags: z.array(z.string()),
 });
 
-// Rename this to PagedPosts once I add pagination
 export const PostsCollection = z.array(Post);
 
 export const Comment = z.object({
