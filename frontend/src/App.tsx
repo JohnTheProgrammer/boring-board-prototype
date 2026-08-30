@@ -17,14 +17,13 @@ import { Tags } from "./pages/Tags";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { trpc } from "./util/api";
 import { ResponsiveNavigation } from "./components/ResponsiveNavigation";
-import { ThemeProvider, createTheme } from "@mui/material/styles";
-
+import { ThemeProvider } from "@mui/material/styles";
+import { theme } from "./util/theme";
 import "./App.css";
 
 export const AuthenticatedContext = React.createContext<
   { username: string } | false
 >(false);
-const theme = createTheme({ cssVariables: true });
 
 const drawerWidth = 240;
 

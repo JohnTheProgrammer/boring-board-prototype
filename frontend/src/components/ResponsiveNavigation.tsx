@@ -1,3 +1,4 @@
+import React from "react";
 import {
   AddBox,
   ChatBubble,
@@ -12,9 +13,11 @@ import {
 } from "@mui/icons-material";
 import Typography from "@mui/material/Typography";
 import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
+import ListItem, { type ListItemProps } from "@mui/material/ListItem";
 import Button from "@mui/material/Button";
-import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemIcon, {
+  type ListItemIconProps,
+} from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
@@ -25,8 +28,9 @@ import IconButton from "@mui/material/IconButton";
 import Toolbar from "@mui/material/Toolbar";
 import { useTheme } from "@mui/material/styles";
 import { UnstyledLink } from "./UnstyledLink";
-import React from "react";
+import { styled } from "@mui/system";
 import { AuthenticatedContext } from "../App";
+import { mono, moss } from "../util/theme";
 
 export const ResponsiveNavigation = ({
   drawerWidth,
@@ -43,61 +47,79 @@ export const ResponsiveNavigation = ({
     setMobileOpen(!mobileOpen);
   };
 
+  const StyledListItem = styled(ListItem)<ListItemProps>(() => ({
+    paddingTop: "4px",
+    paddingBottom: "4px",
+  }));
+
+  const StyledListItemIcon = styled(ListItemIcon)<ListItemIconProps>(() => ({
+    minWidth: "40px",
+  }));
+
   const navigationContent = (
     <>
-      <Typography variant="h4" padding={2}>
-        Boring Board
-      </Typography>
-      <List>
+      <Box paddingX={3} paddingTop={2} display="flex" gap={1}>
+        <Box
+          sx={{
+            height: "26px",
+            width: "26px",
+            borderRadius: "4px",
+            backgroundColor: moss[700],
+          }}
+        ></Box>
+        <Typography variant="h6" sx={{ fontFamily: mono }}>
+          boring board
+        </Typography>
+      </Box>
+
+      <Box paddingX={1} paddingTop={2} paddingBottom={1}>
         {isAuthenticated && (
           <UnstyledLink href="/post/create">
-            <ListItem>
-              <Button variant="contained" fullWidth startIcon={<AddBox />}>
-                Create Post
-              </Button>
-            </ListItem>
+            <Button variant="contained" fullWidth sx={{ fontWeight: 600 }}>
+              New Post
+            </Button>
           </UnstyledLink>
         )}
         {!isAuthenticated && (
           <UnstyledLink href="/login">
-            <ListItem>
-              <Button variant="contained" fullWidth startIcon={<Login />}>
-                Login
-              </Button>
-            </ListItem>
+            <Button variant="contained" fullWidth startIcon={<Login />}>
+              Login
+            </Button>
           </UnstyledLink>
         )}
+      </Box>
+      <List sx={{ paddingY: 0, paddingX: 1 }}>
         <UnstyledLink href="/posts">
-          <ListItem>
-            <ListItemIcon>
+          <StyledListItem>
+            <StyledListItemIcon>
               <Explore />
-            </ListItemIcon>
+            </StyledListItemIcon>
             <ListItemText primary="Posts" />
-          </ListItem>
+          </StyledListItem>
         </UnstyledLink>
         <UnstyledLink href="/tags">
-          <ListItem>
-            <ListItemIcon>
+          <StyledListItem>
+            <StyledListItemIcon>
               <Tag />
-            </ListItemIcon>
+            </StyledListItemIcon>
             <ListItemText primary="Tags" />
-          </ListItem>
+          </StyledListItem>
         </UnstyledLink>
         <UnstyledLink href="/search">
-          <ListItem>
-            <ListItemIcon>
+          <StyledListItem>
+            <StyledListItemIcon>
               <Search />
-            </ListItemIcon>
+            </StyledListItemIcon>
             <ListItemText primary="Search" />
-          </ListItem>
+          </StyledListItem>
         </UnstyledLink>
         <UnstyledLink href="/chat">
-          <ListItem>
-            <ListItemIcon>
+          <StyledListItem>
+            <StyledListItemIcon>
               <ChatBubble />
-            </ListItemIcon>
+            </StyledListItemIcon>
             <ListItemText primary="Chat" />
-          </ListItem>
+          </StyledListItem>
         </UnstyledLink>
       </List>
       <Box sx={{ marginTop: "auto" }}>
